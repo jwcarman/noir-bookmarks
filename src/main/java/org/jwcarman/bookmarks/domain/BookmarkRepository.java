@@ -3,6 +3,7 @@ package org.jwcarman.bookmarks.domain;
 import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
+import java.util.Set;
 
 /** Where bookmarks are stored. */
 public interface BookmarkRepository {
@@ -33,6 +34,20 @@ public interface BookmarkRepository {
    * newest first: {@code createdAt} descending, then {@code id} descending. Empty when none has it.
    */
   List<Bookmark> findByTag(String tag);
+
+  /**
+   * Returns one page of the bookmarks that match: {@code text} occurs in the title or the URL,
+   * ignoring case (an empty {@code text} matches every bookmark), and the bookmark has every tag in
+   * {@code tags} (an empty set matches every bookmark). Newest first: {@code createdAt} descending,
+   * then {@code id} descending.
+   *
+   * @param page the zero-based page number
+   * @param size the page size
+   */
+  List<Bookmark> search(String text, Set<String> tags, int page, int size);
+
+  /** Returns how many bookmarks {@link #search} matches for {@code text} and {@code tags}. */
+  long countSearch(String text, Set<String> tags);
 
   /**
    * Returns the bookmark whose {@code url} equals {@code url} exactly (case-sensitive), if there is

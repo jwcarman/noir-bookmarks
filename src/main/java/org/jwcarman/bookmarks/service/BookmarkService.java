@@ -6,6 +6,8 @@ import java.time.temporal.ChronoUnit;
 import java.util.List;
 import java.util.Locale;
 import java.util.Objects;
+import java.util.Set;
+import java.util.stream.Collectors;
 import org.jwcarman.bookmarks.domain.Bookmark;
 import org.jwcarman.bookmarks.domain.BookmarkRepository;
 import org.jwcarman.bookmarks.domain.UrlNormalizer;
@@ -76,16 +78,7 @@ public class BookmarkService {
    *     starts beyond {@link Integer#MAX_VALUE} bookmarks
    */
   public BookmarkPage list(int page, int size) {
-    if (page < 0) {
-      throw new IllegalArgumentException("page must be at least 0: " + page);
-    }
-    if (size < 1 || size > MAX_PAGE_SIZE) {
-      throw new IllegalArgumentException(
-          "size must be from 1 to " + MAX_PAGE_SIZE + ": " + size);
-    }
-    if ((long) page * size > Integer.MAX_VALUE) {
-      throw new IllegalArgumentException("page " + page + " of size " + size + " is too far");
-    }
+    checkPaging(page, size);
     return new BookmarkPage(repository.findAll(page, size), page, size, repository.count());
   }
 
@@ -102,5 +95,45 @@ public class BookmarkService {
       throw new IllegalArgumentException("tag must not be blank");
     }
     return repository.findByTag(clean);
+  }
+
+  /**
+   * Returns one page of the bookmarks matching {@code text} and {@code tags}, newest first, with the
+   * total number of matches. {@code text} is stripped; each tag is cleaned the way bookmarks clean
+   * their tags (stripped, lowercased with {@code Locale.ROOT}) and blank tags are ignored. Paging
+   * rules are those of {@link #list}.
+   *
+   * @throws NullPointerException if {@code text} or {@code tags} is {@code null}
+   * @throws IllegalArgumentException if {@code page} or {@code size} is out of range
+   */
+  public BookmarkPage search(String text, Set<String> tags, int page, int size) {
+    String cleanText = Objects.requireNonNull(text, "text").strip();
+    Set<String> cleanTags = cleanTags(Objects.requireNonNull(tags, "tags"));
+    checkPaging(page, size);
+    return new BookmarkPage(
+        repository.search(cleanText, cleanTags, page, size),
+        page,
+        size,
+        repository.countSearch(cleanText, cleanTags));
+  }
+
+  private static Set<String> cleanTags(Set<String> tags) {
+    return tags.stream()
+        .map(tag -> Objects.requireNonNull(tag, "tag").strip().toLowerCase(Locale.ROOT))
+        .filter(tag -> !tag.isEmpty())
+        .collect(Collectors.toUnmodifiableSet());
+  }
+
+  private static void checkPaging(int page, int size) {
+    if (page < 0) {
+      throw new IllegalArgumentException("page must be at least 0: " + page);
+    }
+    if (size < 1 || size > MAX_PAGE_SIZE) {
+      throw new IllegalArgumentException(
+          "size must be from 1 to " + MAX_PAGE_SIZE + ": " + size);
+    }
+    if ((long) page * size > Integer.MAX_VALUE) {
+      throw new IllegalArgumentException("page " + page + " of size " + size + " is too far");
+    }
   }
 }
