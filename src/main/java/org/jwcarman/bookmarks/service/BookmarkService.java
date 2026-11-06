@@ -7,6 +7,7 @@ import java.util.List;
 import java.util.Objects;
 import org.jwcarman.bookmarks.domain.Bookmark;
 import org.jwcarman.bookmarks.domain.BookmarkRepository;
+import org.jwcarman.bookmarks.domain.UrlNormalizer;
 import org.springframework.stereotype.Service;
 
 /** Creates, reads, deletes and lists bookmarks. */
@@ -25,12 +26,24 @@ public class BookmarkService {
   }
 
   /**
-   * Saves a new bookmark created now, and returns it with its id. The time is truncated to
-   * microseconds, the precision the database keeps.
+   * Saves a new bookmark created now, and returns it with its id. The URL is stored in canonical
+   * form, {@code UrlNormalizer.normalize(url)}; the time is truncated to microseconds.
+   *
+   * @throws IllegalArgumentException if {@code url} is not an absolute http or https URL (from
+   *     {@code UrlNormalizer})
+   * @throws DuplicateBookmarkException if a bookmark with the same canonical URL already exists;
+   *     nothing is saved
    */
   public Bookmark create(String url, String title, List<String> tags) {
+    String canonical = UrlNormalizer.normalize(url);
+    repository
+        .findByUrl(canonical)
+        .ifPresent(
+            existing -> {
+              throw new DuplicateBookmarkException(canonical, existing.id());
+            });
     var now = Instant.now(clock).truncatedTo(ChronoUnit.MICROS);
-    return repository.save(new Bookmark(null, url, title, tags, now));
+    return repository.save(new Bookmark(null, canonical, title, tags, now));
   }
 
   /**
