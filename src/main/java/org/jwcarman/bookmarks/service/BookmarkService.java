@@ -3,6 +3,7 @@ package org.jwcarman.bookmarks.service;
 import java.time.Clock;
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
 import java.util.Objects;
@@ -95,6 +96,21 @@ public class BookmarkService {
   public BookmarkPage list(int page, int size) {
     checkPaging(page, size);
     return new BookmarkPage(repository.findAll(page, size), page, size, repository.count());
+  }
+
+  /**
+   * Returns every bookmark, newest first (the order of {@link #list}), read from the repository in
+   * pages of {@value #MAX_PAGE_SIZE}.
+   */
+  public List<Bookmark> all() {
+    List<Bookmark> result = new ArrayList<>();
+    for (int page = 0; ; page++) {
+      List<Bookmark> bookmarks = repository.findAll(page, MAX_PAGE_SIZE);
+      result.addAll(bookmarks);
+      if (bookmarks.size() < MAX_PAGE_SIZE) {
+        return result;
+      }
+    }
   }
 
   /**
