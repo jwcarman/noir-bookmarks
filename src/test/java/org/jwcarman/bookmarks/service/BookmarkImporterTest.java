@@ -114,8 +114,8 @@ class BookmarkImporterTest {
   }
 
   @Test
-  void sixFieldsIsWrongFieldCount() {
-    assertThat(importOne("1,https://a.example/,A,,x,extra\r\n").skipped())
+  void sevenFieldsIsWrongFieldCount() {
+    assertThat(importOne("1,https://a.example/,A,,x,notes,extra\r\n").skipped())
         .containsExactly(new SkippedRow(2, SkipReason.WRONG_FIELD_COUNT));
   }
 

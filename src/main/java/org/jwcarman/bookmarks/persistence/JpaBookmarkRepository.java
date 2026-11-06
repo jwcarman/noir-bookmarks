@@ -81,7 +81,10 @@ public class JpaBookmarkRepository implements BookmarkRepository {
     return bookmarks.count();
   }
 
-  /** Searches with a database query; does not load every bookmark into memory. */
+  /**
+   * Searches with a database query; does not load every bookmark into memory. The text matches the
+   * title, the URL or the notes, ignoring case.
+   */
   @Override
   @Transactional(readOnly = true)
   public List<Bookmark> search(String text, Set<String> tags, int page, int size) {
@@ -98,7 +101,7 @@ public class JpaBookmarkRepository implements BookmarkRepository {
     return query.getResultList().stream().map(BookmarkEntity::toBookmark).toList();
   }
 
-  /** Counts with a database query. */
+  /** Counts with a database query, with the same matching as {@link #search}. */
   @Override
   @Transactional(readOnly = true)
   public long countSearch(String text, Set<String> tags) {
@@ -129,7 +132,9 @@ public class JpaBookmarkRepository implements BookmarkRepository {
       List<String> conditions = new ArrayList<>();
       if (pattern != null) {
         conditions.add(
-            "(lower(b.title) like :pattern escape '!' or lower(b.url) like :pattern escape '!')");
+            "(lower(b.title) like :pattern escape '!'"
+                + " or lower(b.url) like :pattern escape '!'"
+                + " or lower(b.notes) like :pattern escape '!')");
       }
       for (int i = 0; i < tags.size(); i++) {
         conditions.add(":tag" + i + " member of b.tags");

@@ -42,10 +42,10 @@ public interface BookmarkRepository {
   List<Bookmark> findByTag(String tag);
 
   /**
-   * Returns one page of the bookmarks that match: {@code text} occurs in the title or the URL,
-   * ignoring case (an empty {@code text} matches every bookmark), and the bookmark has every tag in
-   * {@code tags} (an empty set matches every bookmark). Newest first: {@code createdAt} descending,
-   * then {@code id} descending.
+   * Returns one page of the bookmarks that match: {@code text} occurs in the title, the URL or the
+   * notes, ignoring case (an empty {@code text} matches every bookmark), and the bookmark has every
+   * tag in {@code tags} (an empty set matches every bookmark). Newest first: {@code createdAt}
+   * descending, then {@code id} descending.
    *
    * @param page the zero-based page number
    * @param size the page size

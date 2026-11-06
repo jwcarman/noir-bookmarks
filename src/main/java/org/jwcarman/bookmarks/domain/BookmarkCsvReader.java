@@ -10,7 +10,10 @@ public final class BookmarkCsvReader {
   /** The largest number of data records {@link #read} accepts. */
   public static final int MAX_RECORDS = 1000;
 
-  private static final List<String> HEADER = List.of("id", "url", "title", "tags", "createdAt");
+  private static final List<String> OLD_HEADER =
+      List.of("id", "url", "title", "tags", "createdAt");
+  private static final List<String> HEADER =
+      List.of("id", "url", "title", "tags", "createdAt", "notes");
   private static final char BOM = '﻿';
 
   private BookmarkCsvReader() {}
@@ -24,15 +27,15 @@ public final class BookmarkCsvReader {
    * "\n"}, and {@code ""} inside it stands for one {@code "}. An unquoted field is taken as it is,
    * with no stripping. A line that is empty (outside a quoted field) is not a record and is
    * skipped, but still counts for line numbers. A UTF-8 byte order mark ({@code U+FEFF}) at the
-   * very start is ignored. The first record must be exactly the header {@code
-   * id,url,title,tags,createdAt}. Data records are not checked for their number of fields.
+   * very start is ignored. The first record must be exactly one of the headers {@code
+   * id,url,title,tags,createdAt} (an export from before notes existed) or {@code
+   * id,url,title,tags,createdAt,notes}. Data records are not checked for their number of fields.
    *
    * <p>A record's {@link CsvRecord#line()} is the physical line it starts on: 1 plus the number of
    * {@code "\n"} before it, including those inside quoted fields and in skipped empty lines.
    *
    * @throws NullPointerException if {@code csv} is {@code null}
-   * @throws IllegalArgumentException if there is no header or it differs from {@code
-   *     id,url,title,tags,createdAt}; if a quoted field is not closed; if a closing {@code "} is
+   * @throws IllegalArgumentException if there is no header or it is neither of the two headers; if a quoted field is not closed; if a closing {@code "} is
    *     followed by anything other than {@code ,}, a line ending or the end of the input; or if
    *     there are more than {@value #MAX_RECORDS} data records
    */
@@ -53,8 +56,10 @@ public final class BookmarkCsvReader {
 
     List<CsvRecord> parse() {
       skipEmptyLines();
-      if (!HEADER.equals(parseRecord())) {
-        throw new IllegalArgumentException("CSV must start with the header " + HEADER);
+      List<String> header = parseRecord();
+      if (!HEADER.equals(header) && !OLD_HEADER.equals(header)) {
+        throw new IllegalArgumentException(
+            "CSV must start with the header " + HEADER + " or " + OLD_HEADER);
       }
       List<CsvRecord> records = new ArrayList<>();
       skipEmptyLines();

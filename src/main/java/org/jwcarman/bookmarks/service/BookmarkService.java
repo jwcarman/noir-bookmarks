@@ -29,16 +29,24 @@ public class BookmarkService {
     this.clock = Objects.requireNonNull(clock, "clock");
   }
 
+  /** Same as {@link #create(String, String, List, String)} with empty notes. */
+  public Bookmark create(String url, String title, List<String> tags) {
+    return create(url, title, tags, "");
+  }
+
   /**
-   * Saves a new bookmark created now, and returns it with its id. The URL is stored in canonical
-   * form, {@code UrlNormalizer.normalize(url)}; the time is truncated to microseconds.
+   * Saves a new bookmark created now, with {@code notes}, and returns it with its id. The URL is
+   * stored in canonical form, {@code UrlNormalizer.normalize(url)}; the time is truncated to
+   * microseconds.
    *
+   * @throws NullPointerException if {@code notes} is {@code null}
    * @throws IllegalArgumentException if {@code url} is not an absolute http or https URL (from
-   *     {@code UrlNormalizer})
+   *     {@code UrlNormalizer}), or {@code notes} is longer than 2000 characters
    * @throws DuplicateBookmarkException if a bookmark with the same canonical URL already exists;
    *     nothing is saved
    */
-  public Bookmark create(String url, String title, List<String> tags) {
+  public Bookmark create(String url, String title, List<String> tags, String notes) {
+    Objects.requireNonNull(notes, "notes");
     String canonical = UrlNormalizer.normalize(url);
     repository
         .findByUrl(canonical)
@@ -47,7 +55,7 @@ public class BookmarkService {
               throw new DuplicateBookmarkException(canonical, existing.id());
             });
     var now = Instant.now(clock).truncatedTo(ChronoUnit.MICROS);
-    return repository.save(new Bookmark(null, canonical, title, tags, now));
+    return repository.save(new Bookmark(null, canonical, title, tags, now, notes));
   }
 
   /**
@@ -72,7 +80,7 @@ public class BookmarkService {
 
   /**
    * Replaces the title and tags of the bookmark with {@code id} and returns the saved result; the
-   * id, URL and creation time never change. Tags are cleaned as when a bookmark is created.
+   * id, URL, creation time and notes never change. Tags are cleaned as when a bookmark is created.
    *
    * @throws NullPointerException if {@code title} or {@code tags} is {@code null}
    * @throws BookmarkNotFoundException if there is no bookmark with {@code id}
@@ -81,8 +89,28 @@ public class BookmarkService {
     Objects.requireNonNull(title, "title");
     Objects.requireNonNull(tags, "tags");
     Bookmark existing = get(id);
+    return save(existing, title, tags, existing.notes());
+  }
+
+  /**
+   * Replaces the title, tags and notes of the bookmark with {@code id} and returns the saved
+   * result; the id, URL and creation time never change.
+   *
+   * @throws NullPointerException if {@code title}, {@code tags} or {@code notes} is {@code null}
+   * @throws IllegalArgumentException if {@code notes} is longer than 2000 characters
+   * @throws BookmarkNotFoundException if there is no bookmark with {@code id}
+   */
+  public Bookmark update(long id, String title, List<String> tags, String notes) {
+    Objects.requireNonNull(title, "title");
+    Objects.requireNonNull(tags, "tags");
+    Objects.requireNonNull(notes, "notes");
+    return save(get(id), title, tags, notes);
+  }
+
+  /** Saves {@code existing} with a new title, tags and notes; id, URL and creation time are kept. */
+  private Bookmark save(Bookmark existing, String title, List<String> tags, String notes) {
     return repository.save(
-        new Bookmark(existing.id(), existing.url(), title, tags, existing.createdAt()));
+        new Bookmark(existing.id(), existing.url(), title, tags, existing.createdAt(), notes));
   }
 
   /**
@@ -133,7 +161,8 @@ public class BookmarkService {
    * how many bookmarks changed. Both tags are cleaned first the way bookmarks clean their tags
    * (stripped, lowercased with {@code Locale.ROOT}). On each changed bookmark, {@code to} takes the
    * position {@code from} had; if the bookmark already had {@code to}, the first occurrence keeps
-   * its position and the duplicate is dropped. The id, URL, title and creation time never change.
+   * its position and the duplicate is dropped. The id, URL, title, creation time and notes never
+   * change.
    * When the cleaned tags are equal nothing is saved and the result is 0.
    *
    * @throws NullPointerException if {@code from} or {@code to} is {@code null}
@@ -149,9 +178,7 @@ public class BookmarkService {
     for (Bookmark bookmark : tagged) {
       List<String> tags =
           bookmark.tags().stream().map(tag -> tag.equals(cleanFrom) ? cleanTo : tag).toList();
-      repository.save(
-          new Bookmark(
-              bookmark.id(), bookmark.url(), bookmark.title(), tags, bookmark.createdAt()));
+      save(bookmark, bookmark.title(), tags, bookmark.notes());
     }
     return tagged.size();
   }

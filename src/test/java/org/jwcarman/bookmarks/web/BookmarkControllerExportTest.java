@@ -36,8 +36,8 @@ class BookmarkControllerExportTest {
         .andExpect(
             content()
                 .string(
-                    "id,url,title,tags,createdAt\r\n"
-                        + "1,https://a.example,Alpha,java,2026-11-06T12:00:00Z\r\n"));
+                    "id,url,title,tags,createdAt,notes\r\n"
+                        + "1,https://a.example,Alpha,java,2026-11-06T12:00:00Z,\r\n"));
   }
 
   @Test

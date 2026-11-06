@@ -82,7 +82,8 @@ class InMemoryBookmarkRepository implements BookmarkRepository {
   private static boolean matches(Bookmark b, String text, Set<String> tags) {
     String needle = text.toLowerCase(Locale.ROOT);
     return (b.title().toLowerCase(Locale.ROOT).contains(needle)
-            || b.url().toLowerCase(Locale.ROOT).contains(needle))
+            || b.url().toLowerCase(Locale.ROOT).contains(needle)
+            || b.notes().toLowerCase(Locale.ROOT).contains(needle))
         && b.tags().containsAll(tags);
   }
 }

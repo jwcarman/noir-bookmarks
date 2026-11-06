@@ -6,16 +6,16 @@ import java.util.Objects;
 /** CSV rendering of bookmarks. */
 public final class BookmarkCsv {
 
-  private static final String HEADER = "id,url,title,tags,createdAt";
+  private static final String HEADER = "id,url,title,tags,createdAt,notes";
   private static final String EOL = "\r\n";
 
   private BookmarkCsv() {}
 
   /**
    * Renders {@code bookmarks}, in the given order, as CSV: a header line {@code
-   * id,url,title,tags,createdAt}, then one line per bookmark. Every line, including the last, ends
-   * with {@code "\r\n"}. {@code tags} is the tags joined with {@code ";"}; {@code createdAt} is
-   * {@link java.time.Instant#toString()}. A field that contains a comma, a double quote, a carriage
+   * id,url,title,tags,createdAt,notes}, then one line per bookmark. Every line, including the last,
+   * ends with {@code "\r\n"}. {@code tags} is the tags joined with {@code ";"}; {@code createdAt}
+   * is {@link java.time.Instant#toString()}; {@code notes} is the notes. A field that contains a comma, a double quote, a carriage
    * return or a line feed is enclosed in double quotes, with each double quote inside it doubled;
    * other fields are written as they are.
    *
@@ -35,6 +35,8 @@ public final class BookmarkCsv {
           .append(field(String.join(";", bookmark.tags())))
           .append(',')
           .append(field(bookmark.createdAt().toString()))
+          .append(',')
+          .append(field(bookmark.notes()))
           .append(EOL);
     }
     return sb.toString();
