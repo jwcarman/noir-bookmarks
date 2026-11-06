@@ -7,6 +7,7 @@ import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
+import java.util.Set;
 import org.junit.jupiter.api.Test;
 
 class BookmarkRepositoryFindByUrlTest {
@@ -53,6 +54,16 @@ class BookmarkRepositoryFindByUrlTest {
     @Override
     public long count() {
       return all.size();
+    }
+
+    @Override
+    public List<Bookmark> search(String text, Set<String> tags, int page, int size) {
+      throw new UnsupportedOperationException();
+    }
+
+    @Override
+    public long countSearch(String text, Set<String> tags) {
+      throw new UnsupportedOperationException();
     }
 
     List<Integer> pages() {

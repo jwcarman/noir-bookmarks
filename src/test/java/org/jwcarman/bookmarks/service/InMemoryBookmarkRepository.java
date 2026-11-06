@@ -2,7 +2,9 @@ package org.jwcarman.bookmarks.service;
 
 import java.util.Comparator;
 import java.util.List;
+import java.util.Locale;
 import java.util.Optional;
+import java.util.Set;
 import java.util.TreeMap;
 import org.jwcarman.bookmarks.domain.Bookmark;
 import org.jwcarman.bookmarks.domain.BookmarkRepository;
@@ -53,5 +55,27 @@ class InMemoryBookmarkRepository implements BookmarkRepository {
   @Override
   public long count() {
     return bookmarks.size();
+  }
+
+  @Override
+  public List<Bookmark> search(String text, Set<String> tags, int page, int size) {
+    return bookmarks.values().stream()
+        .filter(b -> matches(b, text, tags))
+        .sorted(NEWEST_FIRST)
+        .skip((long) page * size)
+        .limit(size)
+        .toList();
+  }
+
+  @Override
+  public long countSearch(String text, Set<String> tags) {
+    return bookmarks.values().stream().filter(b -> matches(b, text, tags)).count();
+  }
+
+  private static boolean matches(Bookmark b, String text, Set<String> tags) {
+    String needle = text.toLowerCase(Locale.ROOT);
+    return (b.title().toLowerCase(Locale.ROOT).contains(needle)
+            || b.url().toLowerCase(Locale.ROOT).contains(needle))
+        && b.tags().containsAll(tags);
   }
 }
