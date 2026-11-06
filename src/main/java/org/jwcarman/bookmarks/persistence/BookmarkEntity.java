@@ -34,7 +34,7 @@ class BookmarkEntity {
   @ElementCollection(fetch = FetchType.EAGER)
   @CollectionTable(name = "bookmark_tag", joinColumns = @JoinColumn(name = "bookmark_id"))
   @OrderColumn(name = "position")
-  @Column(name = "tag", nullable = false)
+  @Column(name = "tag", nullable = false, length = 50)
   private List<String> tags = new ArrayList<>();
 
   @Column(name = "created_at", nullable = false)

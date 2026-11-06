@@ -8,6 +8,7 @@ import org.jwcarman.bookmarks.domain.Bookmark;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.orm.jpa.DataJpaTest;
+import org.springframework.boot.test.autoconfigure.orm.jpa.TestEntityManager;
 import org.springframework.context.annotation.Import;
 
 @DataJpaTest
@@ -17,6 +18,13 @@ class JpaBookmarkRepositoryTest {
   static final Instant NOON = Instant.parse("2026-11-06T12:00:00Z");
 
   @Autowired JpaBookmarkRepository repository;
+  @Autowired TestEntityManager entityManager;
+
+  /** Writes pending changes and empties the session, so reads come from the database. */
+  void flushAndClear() {
+    entityManager.flush();
+    entityManager.clear();
+  }
 
   Bookmark save(String url, Instant at) {
     return repository.save(new Bookmark(null, url, "title", List.of(), at));
@@ -26,6 +34,7 @@ class JpaBookmarkRepositoryTest {
   void saveAssignsIdAndFindReturnsIt() {
     var saved = repository.save(new Bookmark(null, "https://a.example", "A", List.of("x"), NOON));
     assertThat(saved.id()).isNotNull();
+    flushAndClear();
     assertThat(repository.findById(saved.id())).contains(saved);
     assertThat(repository.findById(saved.id() + 1000)).isEmpty();
   }
@@ -34,6 +43,7 @@ class JpaBookmarkRepositoryTest {
   void tagsKeepTheirOrder() {
     var saved =
         repository.save(new Bookmark(null, "https://a.example", "A", List.of("b", "a", "c"), NOON));
+    flushAndClear();
     assertThat(repository.findById(saved.id()).orElseThrow().tags()).containsExactly("b", "a", "c");
   }
 

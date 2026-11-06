@@ -2,6 +2,7 @@ package org.jwcarman.bookmarks.service;
 
 import java.time.Clock;
 import java.time.Instant;
+import java.time.temporal.ChronoUnit;
 import java.util.List;
 import java.util.Objects;
 import org.jwcarman.bookmarks.domain.Bookmark;
@@ -23,9 +24,13 @@ public class BookmarkService {
     this.clock = Objects.requireNonNull(clock, "clock");
   }
 
-  /** Saves a new bookmark created now, and returns it with its id. */
+  /**
+   * Saves a new bookmark created now, and returns it with its id. The time is truncated to
+   * microseconds, the precision the database keeps.
+   */
   public Bookmark create(String url, String title, List<String> tags) {
-    return repository.save(new Bookmark(null, url, title, tags, Instant.now(clock)));
+    var now = Instant.now(clock).truncatedTo(ChronoUnit.MICROS);
+    return repository.save(new Bookmark(null, url, title, tags, now));
   }
 
   /**
@@ -53,7 +58,8 @@ public class BookmarkService {
    *
    * @param page the zero-based page number, at least 0
    * @param size the page size, from 1 to {@value #MAX_PAGE_SIZE}
-   * @throws IllegalArgumentException if {@code page} or {@code size} is out of range
+   * @throws IllegalArgumentException if {@code page} or {@code size} is out of range, or the page
+   *     starts beyond {@link Integer#MAX_VALUE} bookmarks
    */
   public BookmarkPage list(int page, int size) {
     if (page < 0) {
@@ -62,6 +68,9 @@ public class BookmarkService {
     if (size < 1 || size > MAX_PAGE_SIZE) {
       throw new IllegalArgumentException(
           "size must be from 1 to " + MAX_PAGE_SIZE + ": " + size);
+    }
+    if ((long) page * size > Integer.MAX_VALUE) {
+      throw new IllegalArgumentException("page " + page + " of size " + size + " is too far");
     }
     return new BookmarkPage(repository.findAll(page, size), page, size, repository.count());
   }

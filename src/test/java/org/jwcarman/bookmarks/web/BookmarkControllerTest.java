@@ -119,4 +119,15 @@ class BookmarkControllerTest {
         .andExpect(jsonPath("$.title").value("Bad request"))
         .andExpect(jsonPath("$.detail").value("size must be from 1 to 100: 500"));
   }
+
+  @Test
+  void createWithATooLongTagIs400() throws Exception {
+    var tag = "t".repeat(51);
+    mvc.perform(
+            post("/bookmarks")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content("{\"url\":\"https://a.example\",\"title\":\"A\",\"tags\":[\"" + tag + "\"]}"))
+        .andExpect(status().isBadRequest())
+        .andExpect(content().contentTypeCompatibleWith(MediaType.APPLICATION_PROBLEM_JSON));
+  }
 }

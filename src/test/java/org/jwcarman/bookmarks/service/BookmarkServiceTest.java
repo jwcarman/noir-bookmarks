@@ -96,4 +96,18 @@ class BookmarkServiceTest {
     assertThatThrownBy(() -> new Bookmark(null, "u", "A", null, NOON))
         .isInstanceOf(NullPointerException.class);
   }
+
+  @Test
+  void listRejectsAnOffsetBeyondIntRange() {
+    assertThatThrownBy(() -> service.list(Integer.MAX_VALUE, 100))
+        .isInstanceOf(IllegalArgumentException.class);
+    assertThat(service.list(Integer.MAX_VALUE / 100, 100).items()).isEmpty();
+  }
+
+  /** Databases keep microseconds; a nanosecond clock would make create() and get() disagree. */
+  @Test
+  void createTruncatesTheTimeToMicroseconds() {
+    var b = serviceAt(Instant.parse("2026-11-06T12:00:00.123456789Z")).create("https://a.example", "A", List.of());
+    assertThat(b.createdAt()).isEqualTo(Instant.parse("2026-11-06T12:00:00.123456Z"));
+  }
 }
