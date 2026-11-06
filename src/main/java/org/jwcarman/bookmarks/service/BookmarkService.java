@@ -113,6 +113,42 @@ public class BookmarkService {
   }
 
   /**
+   * Replaces tag {@code from} with tag {@code to} on every bookmark tagged {@code from}, and returns
+   * how many bookmarks changed. Both tags are cleaned first the way bookmarks clean their tags
+   * (stripped, lowercased with {@code Locale.ROOT}). On each changed bookmark, {@code to} takes the
+   * position {@code from} had; if the bookmark already had {@code to}, the first occurrence keeps
+   * its position and the duplicate is dropped. The id, URL, title and creation time never change.
+   * When the cleaned tags are equal nothing is saved and the result is 0.
+   *
+   * @throws NullPointerException if {@code from} or {@code to} is {@code null}
+   * @throws IllegalArgumentException if {@code from} or {@code to} is blank
+   */
+  public int renameTag(String from, String to) {
+    String cleanFrom = cleanTag(from, "from");
+    String cleanTo = cleanTag(to, "to");
+    if (cleanFrom.equals(cleanTo)) {
+      return 0;
+    }
+    List<Bookmark> tagged = repository.findByTag(cleanFrom);
+    for (Bookmark bookmark : tagged) {
+      List<String> tags =
+          bookmark.tags().stream().map(tag -> tag.equals(cleanFrom) ? cleanTo : tag).toList();
+      repository.save(
+          new Bookmark(
+              bookmark.id(), bookmark.url(), bookmark.title(), tags, bookmark.createdAt()));
+    }
+    return tagged.size();
+  }
+
+  private static String cleanTag(String tag, String name) {
+    String clean = Objects.requireNonNull(tag, name).strip().toLowerCase(Locale.ROOT);
+    if (clean.isEmpty()) {
+      throw new IllegalArgumentException(name + " must not be blank");
+    }
+    return clean;
+  }
+
+  /**
    * Returns one page of the bookmarks matching {@code text} and {@code tags}, newest first, with the
    * total number of matches. {@code text} is stripped; each tag is cleaned the way bookmarks clean
    * their tags (stripped, lowercased with {@code Locale.ROOT}) and blank tags are ignored. Paging
