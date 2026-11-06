@@ -29,6 +29,12 @@ public interface BookmarkRepository {
   long count();
 
   /**
+   * Returns every bookmark that has {@code tag} among its tags (exact, case-sensitive match),
+   * newest first: {@code createdAt} descending, then {@code id} descending. Empty when none has it.
+   */
+  List<Bookmark> findByTag(String tag);
+
+  /**
    * Returns the bookmark whose {@code url} equals {@code url} exactly (case-sensitive), if there is
    * one. This default looks through {@link #findAll(int, int)} pages of 100, from page 0, until it
    * finds a match or gets a page with fewer than 100 bookmarks; when several match it returns the

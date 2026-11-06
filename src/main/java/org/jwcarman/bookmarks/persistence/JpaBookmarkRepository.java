@@ -50,6 +50,15 @@ public class JpaBookmarkRepository implements BookmarkRepository {
         .toList();
   }
 
+  /** Finds through {@code SpringDataBookmarks.findByTagsContainingOrderByCreatedAtDescIdDesc}. */
+  @Override
+  @Transactional(readOnly = true)
+  public List<Bookmark> findByTag(String tag) {
+    return bookmarks.findByTagsContainingOrderByCreatedAtDescIdDesc(tag).stream()
+        .map(BookmarkEntity::toBookmark)
+        .toList();
+  }
+
   @Override
   @Transactional(readOnly = true)
   public long count() {
