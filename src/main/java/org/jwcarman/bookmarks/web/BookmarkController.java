@@ -7,6 +7,7 @@ import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
@@ -44,6 +45,17 @@ public class BookmarkController {
   @GetMapping("/{id}")
   public BookmarkResponse get(@PathVariable long id) {
     return BookmarkResponse.from(service.get(id));
+  }
+
+  /**
+   * {@code PUT /bookmarks/{id}}: applies the request with {@code BookmarkService.update} and
+   * returns 200 with the updated bookmark. 404 (problem detail, title {@code Bookmark not found})
+   * when there is no such bookmark; 400 (problem detail) when the body is invalid.
+   */
+  @PutMapping("/{id}")
+  public BookmarkResponse update(
+      @PathVariable long id, @Valid @RequestBody UpdateBookmarkRequest request) {
+    return BookmarkResponse.from(service.update(id, request.title(), request.tags()));
   }
 
   @DeleteMapping("/{id}")

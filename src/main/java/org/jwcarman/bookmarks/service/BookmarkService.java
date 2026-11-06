@@ -70,6 +70,21 @@ public class BookmarkService {
   }
 
   /**
+   * Replaces the title and tags of the bookmark with {@code id} and returns the saved result; the
+   * id, URL and creation time never change. Tags are cleaned as when a bookmark is created.
+   *
+   * @throws NullPointerException if {@code title} or {@code tags} is {@code null}
+   * @throws BookmarkNotFoundException if there is no bookmark with {@code id}
+   */
+  public Bookmark update(long id, String title, List<String> tags) {
+    Objects.requireNonNull(title, "title");
+    Objects.requireNonNull(tags, "tags");
+    Bookmark existing = get(id);
+    return repository.save(
+        new Bookmark(existing.id(), existing.url(), title, tags, existing.createdAt()));
+  }
+
+  /**
    * Returns one page of bookmarks, newest first.
    *
    * @param page the zero-based page number, at least 0
