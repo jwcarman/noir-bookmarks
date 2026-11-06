@@ -1,7 +1,11 @@
 package org.jwcarman.bookmarks.web;
 
 import jakarta.validation.Valid;
+import java.nio.charset.StandardCharsets;
+import org.jwcarman.bookmarks.domain.BookmarkCsv;
 import org.jwcarman.bookmarks.service.BookmarkService;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -18,6 +22,8 @@ import org.springframework.web.servlet.support.ServletUriComponentsBuilder;
 @RestController
 @RequestMapping("/bookmarks")
 public class BookmarkController {
+
+  private static final MediaType CSV = new MediaType("text", "csv", StandardCharsets.UTF_8);
 
   private final BookmarkService service;
 
@@ -40,6 +46,19 @@ public class BookmarkController {
   public BookmarkPageResponse list(
       @RequestParam(defaultValue = "0") int page, @RequestParam(defaultValue = "20") int size) {
     return BookmarkPageResponse.from(service.list(page, size));
+  }
+
+  /**
+   * {@code GET /bookmarks/export.csv}: returns 200 with {@code BookmarkCsv.write(service.all())},
+   * content type {@code text/csv;charset=UTF-8} and header {@code Content-Disposition: attachment;
+   * filename="bookmarks.csv"}.
+   */
+  @GetMapping("/export.csv")
+  public ResponseEntity<String> export() {
+    return ResponseEntity.ok()
+        .contentType(CSV)
+        .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=\"bookmarks.csv\"")
+        .body(BookmarkCsv.write(service.all()));
   }
 
   @GetMapping("/{id}")
