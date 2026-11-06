@@ -52,6 +52,11 @@ class BookmarkRepositoryFindByUrlTest {
     }
 
     @Override
+    public int deleteByTag(String tag) {
+      throw new UnsupportedOperationException();
+    }
+
+    @Override
     public long count() {
       return all.size();
     }

@@ -53,6 +53,13 @@ class InMemoryBookmarkRepository implements BookmarkRepository {
   }
 
   @Override
+  public int deleteByTag(String tag) {
+    int before = bookmarks.size();
+    bookmarks.values().removeIf(b -> b.tags().contains(tag));
+    return before - bookmarks.size();
+  }
+
+  @Override
   public long count() {
     return bookmarks.size();
   }

@@ -66,6 +66,15 @@ public class JpaBookmarkRepository implements BookmarkRepository {
         .toList();
   }
 
+  /** Deletes with JPA; the bookmarks' tags are deleted with them. */
+  @Override
+  public int deleteByTag(String tag) {
+    List<BookmarkEntity> tagged = bookmarks.findByTagsContainingOrderByCreatedAtDescIdDesc(tag);
+    bookmarks.deleteAll(tagged);
+    bookmarks.flush();
+    return tagged.size();
+  }
+
   @Override
   @Transactional(readOnly = true)
   public long count() {

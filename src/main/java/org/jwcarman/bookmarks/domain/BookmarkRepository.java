@@ -26,6 +26,12 @@ public interface BookmarkRepository {
    */
   List<Bookmark> findAll(int page, int size);
 
+  /**
+   * Deletes every bookmark that has {@code tag} among its tags (exact, case-sensitive match) and
+   * returns how many were deleted.
+   */
+  int deleteByTag(String tag);
+
   /** Returns how many bookmarks are stored. */
   long count();
 
