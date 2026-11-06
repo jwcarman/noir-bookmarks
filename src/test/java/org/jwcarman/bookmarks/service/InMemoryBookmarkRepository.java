@@ -43,6 +43,14 @@ class InMemoryBookmarkRepository implements BookmarkRepository {
   }
 
   @Override
+  public List<Bookmark> findByTag(String tag) {
+    return bookmarks.values().stream()
+        .filter(b -> b.tags().contains(tag))
+        .sorted(NEWEST_FIRST)
+        .toList();
+  }
+
+  @Override
   public long count() {
     return bookmarks.size();
   }

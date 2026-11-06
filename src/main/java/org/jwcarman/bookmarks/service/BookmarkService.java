@@ -4,6 +4,7 @@ import java.time.Clock;
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
 import java.util.List;
+import java.util.Locale;
 import java.util.Objects;
 import org.jwcarman.bookmarks.domain.Bookmark;
 import org.jwcarman.bookmarks.domain.BookmarkRepository;
@@ -86,5 +87,20 @@ public class BookmarkService {
       throw new IllegalArgumentException("page " + page + " of size " + size + " is too far");
     }
     return new BookmarkPage(repository.findAll(page, size), page, size, repository.count());
+  }
+
+  /**
+   * Returns the bookmarks tagged {@code tag}, newest first. The tag is cleaned the way bookmarks
+   * clean their tags (stripped and lowercased with {@code Locale.ROOT}) before the lookup.
+   *
+   * @throws NullPointerException if {@code tag} is {@code null}
+   * @throws IllegalArgumentException if {@code tag} is blank
+   */
+  public List<Bookmark> listByTag(String tag) {
+    String clean = Objects.requireNonNull(tag, "tag").strip().toLowerCase(Locale.ROOT);
+    if (clean.isEmpty()) {
+      throw new IllegalArgumentException("tag must not be blank");
+    }
+    return repository.findByTag(clean);
   }
 }
