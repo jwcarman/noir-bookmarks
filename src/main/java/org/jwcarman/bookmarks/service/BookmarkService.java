@@ -156,6 +156,17 @@ public class BookmarkService {
     return tagged.size();
   }
 
+  /**
+   * Deletes every bookmark tagged {@code tag} and returns how many were deleted. The tag is cleaned
+   * the way bookmarks clean their tags (stripped, lowercased with {@code Locale.ROOT}) first.
+   *
+   * @throws NullPointerException if {@code tag} is {@code null}
+   * @throws IllegalArgumentException if {@code tag} is blank
+   */
+  public int deleteTagged(String tag) {
+    return repository.deleteByTag(cleanTag(tag, "tag"));
+  }
+
   private static String cleanTag(String tag, String name) {
     String clean = Objects.requireNonNull(tag, name).strip().toLowerCase(Locale.ROOT);
     if (clean.isEmpty()) {
