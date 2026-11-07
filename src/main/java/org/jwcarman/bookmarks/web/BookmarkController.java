@@ -2,6 +2,8 @@ package org.jwcarman.bookmarks.web;
 
 import jakarta.validation.Valid;
 import java.nio.charset.StandardCharsets;
+import java.util.List;
+import java.util.Set;
 import org.jwcarman.bookmarks.domain.BookmarkCsv;
 import org.jwcarman.bookmarks.service.BookmarkService;
 import org.springframework.http.HttpHeaders;
@@ -47,10 +49,42 @@ public class BookmarkController {
     return ResponseEntity.created(location).body(BookmarkResponse.from(saved));
   }
 
-  @GetMapping
-  public BookmarkPageResponse list(
-      @RequestParam(defaultValue = "0") int page, @RequestParam(defaultValue = "20") int size) {
+  /**
+   * No longer mapped to any request: {@code GET /bookmarks} is served by {@link #list(String,
+   * int)}. Kept only because noir keeps existing public API.
+   */
+  public BookmarkPageResponse list(int page, int size) {
     return BookmarkPageResponse.from(service.list(page, size));
+  }
+
+  /**
+   * {@code GET /bookmarks?limit=&after=}: returns 200 with {@code BookmarkService.listAfter(after,
+   * limit)} as a {@link CursorPageResponse}. {@code limit} defaults to 20; {@code after} is
+   * optional. The old {@code page} and {@code size} parameters are ignored. 400 (problem detail,
+   * title {@code Bad request}) for a limit out of range or an invalid cursor.
+   */
+  @GetMapping
+  public CursorPageResponse list(
+      @RequestParam(required = false) String after,
+      @RequestParam(defaultValue = "20") int limit) {
+    return CursorPageResponse.from(service.listAfter(after, limit));
+  }
+
+  /**
+   * {@code GET /bookmarks/search?q=&tag=&tag=&limit=&after=}: returns 200 with {@code
+   * BookmarkService.searchAfter(q, tags, after, limit)} as a {@link CursorPageResponse}. {@code q}
+   * defaults to {@code ""}; {@code tag} may be repeated and defaults to none; {@code limit} defaults
+   * to 20. 400 (problem detail, title {@code Bad request}) for a limit out of range or an invalid
+   * cursor.
+   */
+  @GetMapping("/search")
+  public CursorPageResponse search(
+      @RequestParam(defaultValue = "") String q,
+      @RequestParam(required = false) List<String> tag,
+      @RequestParam(required = false) String after,
+      @RequestParam(defaultValue = "20") int limit) {
+    Set<String> tags = tag == null ? Set.of() : Set.copyOf(tag);
+    return CursorPageResponse.from(service.searchAfter(q, tags, after, limit));
   }
 
   /**

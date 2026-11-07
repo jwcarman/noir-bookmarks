@@ -9,6 +9,7 @@ import java.util.Optional;
 import java.util.Set;
 import org.jwcarman.bookmarks.domain.Bookmark;
 import org.jwcarman.bookmarks.domain.BookmarkRepository;
+import org.jwcarman.bookmarks.domain.Cursor;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Repository;
@@ -88,7 +89,32 @@ public class JpaBookmarkRepository implements BookmarkRepository {
   @Override
   @Transactional(readOnly = true)
   public List<Bookmark> search(String text, Set<String> tags, int page, int size) {
-    var filter = new SearchFilter(text, tags);
+    TypedQuery<BookmarkEntity> query = newestFirst(new SearchFilter(text, tags, null));
+    query.setFirstResult(Math.multiplyExact(page, size));
+    query.setMaxResults(size);
+    return query.getResultList().stream().map(BookmarkEntity::toBookmark).toList();
+  }
+
+  /**
+   * Finds with a single database query whose where clause holds the cursor condition; never skips
+   * rows with an offset and never loads more than {@code limit} bookmarks.
+   */
+  @Override
+  @Transactional(readOnly = true)
+  public List<Bookmark> findAfter(Cursor after, int limit) {
+    return searchAfter("", Set.of(), after, limit);
+  }
+
+  /** Like {@link #findAfter}, with the search conditions of {@link #search} added. */
+  @Override
+  @Transactional(readOnly = true)
+  public List<Bookmark> searchAfter(String text, Set<String> tags, Cursor after, int limit) {
+    TypedQuery<BookmarkEntity> query = newestFirst(new SearchFilter(text, tags, after));
+    query.setMaxResults(limit);
+    return query.getResultList().stream().map(BookmarkEntity::toBookmark).toList();
+  }
+
+  private TypedQuery<BookmarkEntity> newestFirst(SearchFilter filter) {
     TypedQuery<BookmarkEntity> query =
         entityManager.createQuery(
             "select b from BookmarkEntity b"
@@ -96,16 +122,14 @@ public class JpaBookmarkRepository implements BookmarkRepository {
                 + " order by b.createdAt desc, b.id desc",
             BookmarkEntity.class);
     filter.bind(query);
-    query.setFirstResult(Math.multiplyExact(page, size));
-    query.setMaxResults(size);
-    return query.getResultList().stream().map(BookmarkEntity::toBookmark).toList();
+    return query;
   }
 
   /** Counts with a database query, with the same matching as {@link #search}. */
   @Override
   @Transactional(readOnly = true)
   public long countSearch(String text, Set<String> tags) {
-    var filter = new SearchFilter(text, tags);
+    var filter = new SearchFilter(text, tags, null);
     TypedQuery<Long> query =
         entityManager.createQuery(
             "select count(b) from BookmarkEntity b" + filter.where(), Long.class);
@@ -118,10 +142,12 @@ public class JpaBookmarkRepository implements BookmarkRepository {
 
     private final String pattern;
     private final List<String> tags;
+    private final Cursor after;
 
-    SearchFilter(String text, Set<String> tags) {
+    SearchFilter(String text, Set<String> tags, Cursor after) {
       this.pattern = text.isEmpty() ? null : "%" + escape(text.toLowerCase(Locale.ROOT)) + "%";
       this.tags = new ArrayList<>(tags);
+      this.after = after;
     }
 
     private static String escape(String text) {
@@ -139,6 +165,11 @@ public class JpaBookmarkRepository implements BookmarkRepository {
       for (int i = 0; i < tags.size(); i++) {
         conditions.add(":tag" + i + " member of b.tags");
       }
+      if (after != null) {
+        conditions.add(
+            "(b.createdAt < :afterCreatedAt"
+                + " or (b.createdAt = :afterCreatedAt and b.id < :afterId))");
+      }
       return conditions.isEmpty() ? "" : " where " + String.join(" and ", conditions);
     }
 
@@ -148,6 +179,10 @@ public class JpaBookmarkRepository implements BookmarkRepository {
       }
       for (int i = 0; i < tags.size(); i++) {
         query.setParameter("tag" + i, tags.get(i));
+      }
+      if (after != null) {
+        query.setParameter("afterCreatedAt", after.createdAt());
+        query.setParameter("afterId", after.id());
       }
     }
   }
