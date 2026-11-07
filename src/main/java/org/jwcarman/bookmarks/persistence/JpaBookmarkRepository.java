@@ -41,13 +41,29 @@ public class JpaBookmarkRepository implements BookmarkRepository {
     return bookmarks.findById(id).map(BookmarkEntity::toBookmark);
   }
 
+  /**
+   * Deletes the bookmark with {@code id}, and first removes it from every collection; returns
+   * whether there was one. The other members of those collections keep their order.
+   */
   @Override
   public boolean deleteById(long id) {
     if (!bookmarks.existsById(id)) {
       return false;
     }
+    removeFromCollections(id);
     bookmarks.deleteById(id);
     return true;
+  }
+
+  private void removeFromCollections(long id) {
+    var util = entityManager.getEntityManagerFactory().getPersistenceUnitUtil();
+    entityManager
+        .createQuery(
+            "select distinct c from CollectionEntity c join c.bookmarks b where b.id = :id",
+            CollectionEntity.class)
+        .setParameter("id", id)
+        .getResultList()
+        .forEach(c -> c.bookmarks().removeIf(b -> Long.valueOf(id).equals(util.getIdentifier(b))));
   }
 
   @Override
@@ -67,10 +83,14 @@ public class JpaBookmarkRepository implements BookmarkRepository {
         .toList();
   }
 
-  /** Deletes with JPA; the bookmarks' tags are deleted with them. */
+  /**
+   * Deletes with JPA every bookmark tagged {@code tag}; the bookmarks' tags are deleted with them,
+   * and each deleted bookmark is first removed from every collection.
+   */
   @Override
   public int deleteByTag(String tag) {
     List<BookmarkEntity> tagged = bookmarks.findByTagsContainingOrderByCreatedAtDescIdDesc(tag);
+    tagged.forEach(b -> removeFromCollections(b.toBookmark().id()));
     bookmarks.deleteAll(tagged);
     bookmarks.flush();
     return tagged.size();

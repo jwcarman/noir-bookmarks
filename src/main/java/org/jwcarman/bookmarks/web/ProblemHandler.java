@@ -1,6 +1,8 @@
 package org.jwcarman.bookmarks.web;
 
 import org.jwcarman.bookmarks.service.BookmarkNotFoundException;
+import org.jwcarman.bookmarks.service.CollectionNotFoundException;
+import org.jwcarman.bookmarks.service.DuplicateCollectionException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ProblemDetail;
 import org.springframework.web.bind.annotation.ExceptionHandler;
@@ -21,6 +23,22 @@ class ProblemHandler {
   ProblemDetail badRequest(IllegalArgumentException e) {
     var problem = ProblemDetail.forStatusAndDetail(HttpStatus.BAD_REQUEST, e.getMessage());
     problem.setTitle("Bad request");
+    return problem;
+  }
+
+  /** 404 with title {@code Collection not found} and the exception's message as detail. */
+  @ExceptionHandler(CollectionNotFoundException.class)
+  ProblemDetail collectionNotFound(CollectionNotFoundException e) {
+    var problem = ProblemDetail.forStatusAndDetail(HttpStatus.NOT_FOUND, e.getMessage());
+    problem.setTitle("Collection not found");
+    return problem;
+  }
+
+  /** 409 with title {@code Duplicate collection} and the exception's message as detail. */
+  @ExceptionHandler(DuplicateCollectionException.class)
+  ProblemDetail duplicateCollection(DuplicateCollectionException e) {
+    var problem = ProblemDetail.forStatusAndDetail(HttpStatus.CONFLICT, e.getMessage());
+    problem.setTitle("Duplicate collection");
     return problem;
   }
 }
