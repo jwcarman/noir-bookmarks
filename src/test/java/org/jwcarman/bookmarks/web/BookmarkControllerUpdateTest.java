@@ -40,7 +40,7 @@ class BookmarkControllerUpdateTest {
 
   @Test
   void updateReturns200WithTheBookmark() throws Exception {
-    given(service.update(7, "New", List.of("a", "b"))).willReturn(UPDATED);
+    given(service.update(7, "New", List.of("a", "b"), "")).willReturn(UPDATED);
     putJson(7, "{\"title\":\"New\",\"tags\":[\"a\",\"b\"]}")
         .andExpect(status().isOk())
         .andExpect(jsonPath("$.id").value(7))
@@ -48,19 +48,19 @@ class BookmarkControllerUpdateTest {
         .andExpect(jsonPath("$.url").value("https://a.example"))
         .andExpect(jsonPath("$.tags[1]").value("b"))
         .andExpect(jsonPath("$.createdAt").value("2026-11-06T12:00:00Z"));
-    verify(service).update(7, "New", List.of("a", "b"));
+    verify(service).update(7, "New", List.of("a", "b"), "");
   }
 
   @Test
   void updateWithoutTagsUsesAnEmptyList() throws Exception {
-    given(service.update(7, "New", List.of())).willReturn(UPDATED);
+    given(service.update(7, "New", List.of(), "")).willReturn(UPDATED);
     putJson(7, "{\"title\":\"New\"}").andExpect(status().isOk());
-    verify(service).update(7, "New", List.of());
+    verify(service).update(7, "New", List.of(), "");
   }
 
   @Test
   void updateMissingIs404Problem() throws Exception {
-    given(service.update(anyLong(), any(), any())).willThrow(new BookmarkNotFoundException(9));
+    given(service.update(anyLong(), any(), any(), any())).willThrow(new BookmarkNotFoundException(9));
     putJson(9, "{\"title\":\"x\"}")
         .andExpect(status().isNotFound())
         .andExpect(content().contentTypeCompatibleWith(MediaType.APPLICATION_PROBLEM_JSON))
@@ -90,7 +90,7 @@ class BookmarkControllerUpdateTest {
   @Test
   void maxLengthTitleIsAccepted() throws Exception {
     var title = "t".repeat(200);
-    given(service.update(7, title, List.of())).willReturn(UPDATED);
+    given(service.update(7, title, List.of(), "")).willReturn(UPDATED);
     putJson(7, "{\"title\":\"" + title + "\"}").andExpect(status().isOk());
   }
 

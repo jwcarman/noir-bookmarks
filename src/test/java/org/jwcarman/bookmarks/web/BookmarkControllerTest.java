@@ -36,7 +36,7 @@ class BookmarkControllerTest {
 
   @Test
   void createReturns201WithLocation() throws Exception {
-    given(service.create("https://a.example", "A", List.of("x"))).willReturn(SAVED);
+    given(service.create("https://a.example", "A", List.of("x"), "")).willReturn(SAVED);
     mvc.perform(
             post("/bookmarks")
                 .contentType(MediaType.APPLICATION_JSON)
@@ -50,7 +50,7 @@ class BookmarkControllerTest {
 
   @Test
   void createWithoutTagsUsesAnEmptyList() throws Exception {
-    given(service.create("https://a.example", "A", List.of())).willReturn(SAVED);
+    given(service.create("https://a.example", "A", List.of(), "")).willReturn(SAVED);
     mvc.perform(
             post("/bookmarks")
                 .contentType(MediaType.APPLICATION_JSON)

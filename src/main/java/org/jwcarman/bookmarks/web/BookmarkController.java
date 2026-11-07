@@ -31,9 +31,14 @@ public class BookmarkController {
     this.service = service;
   }
 
+  /**
+   * {@code POST /bookmarks}: creates the bookmark with {@code BookmarkService.create(url, title,
+   * tags, notes)} and returns 201 with it. 400 (problem detail) when notes are longer than 2000
+   * characters.
+   */
   @PostMapping
   public ResponseEntity<BookmarkResponse> create(@Valid @RequestBody CreateBookmarkRequest request) {
-    var saved = service.create(request.url(), request.title(), request.tags());
+    var saved = service.create(request.url(), request.title(), request.tags(), request.notes());
     var location =
         ServletUriComponentsBuilder.fromCurrentRequest()
             .path("/{id}")
@@ -67,14 +72,15 @@ public class BookmarkController {
   }
 
   /**
-   * {@code PUT /bookmarks/{id}}: applies the request with {@code BookmarkService.update} and
-   * returns 200 with the updated bookmark. 404 (problem detail, title {@code Bookmark not found})
-   * when there is no such bookmark; 400 (problem detail) when the body is invalid.
+   * {@code PUT /bookmarks/{id}}: applies the request with {@code BookmarkService.update(id, title,
+   * tags, notes)} and returns 200 with the updated bookmark. 404 (problem detail, title {@code
+   * Bookmark not found}) when there is no such bookmark; 400 (problem detail) when the body is
+   * invalid, including notes longer than 2000 characters.
    */
   @PutMapping("/{id}")
   public BookmarkResponse update(
       @PathVariable long id, @Valid @RequestBody UpdateBookmarkRequest request) {
-    return BookmarkResponse.from(service.update(id, request.title(), request.tags()));
+    return BookmarkResponse.from(service.update(id, request.title(), request.tags(), request.notes()));
   }
 
   @DeleteMapping("/{id}")

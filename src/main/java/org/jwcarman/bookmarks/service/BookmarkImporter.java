@@ -19,7 +19,8 @@ import org.springframework.stereotype.Service;
 @Service
 public class BookmarkImporter {
 
-  private static final int FIELD_COUNT = 5;
+  private static final int OLD_FIELD_COUNT = 5;
+  private static final int FIELD_COUNT = 6;
   private static final int MAX_URL_LENGTH = 2048;
   private static final int MAX_TITLE_LENGTH = 200;
   private static final int MAX_TAGS = 10;
@@ -56,6 +57,12 @@ public class BookmarkImporter {
    * SkipReason#INVALID_CREATED_AT}); a bookmark with the same canonical URL is already saved or was
    * saved earlier in this import ({@link SkipReason#DUPLICATE}).
    *
+   * <p>A record is valid with 5 fields ({@code id,url,title,tags,createdAt}; the bookmark gets empty
+   * notes) or 6 fields (the sixth is the notes); any other number of fields is {@link
+   * SkipReason#WRONG_FIELD_COUNT}, whichever header the file has. Notes are stored as given, except
+   * that notes longer than 2000 characters are cut to their first 2000 characters (the row is not
+   * skipped).
+   *
    * @return how many bookmarks were saved, and the skipped rows in line order
    * @throws NullPointerException if {@code csv} is {@code null}
    * @throws IllegalArgumentException if {@code BookmarkCsvReader.read} rejects {@code csv}
@@ -77,7 +84,7 @@ public class BookmarkImporter {
 
   /** Saves the bookmark {@code fields} describe; returns why not, or {@code null} when saved. */
   private SkipReason importRecord(List<String> fields) {
-    if (fields.size() != FIELD_COUNT) {
+    if (fields.size() != OLD_FIELD_COUNT && fields.size() != FIELD_COUNT) {
       return SkipReason.WRONG_FIELD_COUNT;
     }
     String url = canonicalUrl(fields.get(1));
@@ -99,8 +106,16 @@ public class BookmarkImporter {
     if (repository.findByUrl(url).isPresent()) {
       return SkipReason.DUPLICATE;
     }
-    repository.save(new Bookmark(null, url, title, tags, createdAt));
+    repository.save(new Bookmark(null, url, title, tags, createdAt, notes(fields)));
     return null;
+  }
+
+  private static String notes(List<String> fields) {
+    if (fields.size() < FIELD_COUNT) {
+      return "";
+    }
+    String notes = fields.get(FIELD_COUNT - 1);
+    return notes.substring(0, Math.min(notes.length(), Bookmark.MAX_NOTES_LENGTH));
   }
 
   private static String canonicalUrl(String url) {
