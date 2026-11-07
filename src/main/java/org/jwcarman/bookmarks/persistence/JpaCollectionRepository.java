@@ -1,6 +1,7 @@
 package org.jwcarman.bookmarks.persistence;
 
 import jakarta.persistence.EntityManager;
+import jakarta.persistence.PersistenceContext;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
@@ -18,11 +19,7 @@ import org.springframework.transaction.annotation.Transactional;
 @Transactional
 public class JpaCollectionRepository implements CollectionRepository {
 
-  private final EntityManager entityManager;
-
-  JpaCollectionRepository(EntityManager entityManager) {
-    this.entityManager = entityManager;
-  }
+  @PersistenceContext private EntityManager entityManager;
 
   @Override
   public BookmarkCollection save(BookmarkCollection collection) {
