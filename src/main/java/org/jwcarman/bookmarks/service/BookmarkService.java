@@ -11,6 +11,7 @@ import java.util.Set;
 import java.util.stream.Collectors;
 import org.jwcarman.bookmarks.domain.Bookmark;
 import org.jwcarman.bookmarks.domain.BookmarkRepository;
+import org.jwcarman.bookmarks.domain.Cursor;
 import org.jwcarman.bookmarks.domain.UrlNormalizer;
 import org.springframework.stereotype.Service;
 
@@ -220,6 +221,58 @@ public class BookmarkService {
         page,
         size,
         repository.countSearch(cleanText, cleanTags));
+  }
+
+  /**
+   * Returns the first {@code limit} bookmarks in the newest-first order after the cursor {@code
+   * after} (an encoded {@code Cursor}), or from the newest when {@code after} is {@code null}. The
+   * page's {@code next} is the encoded cursor of its last item when at least one more bookmark
+   * follows it, and {@code null} otherwise (including for an empty page).
+   *
+   * @param limit from 1 to {@value #MAX_PAGE_SIZE}
+   * @throws IllegalArgumentException if {@code limit} is out of range or {@code after} is not a
+   *     valid cursor
+   */
+  public CursorPage listAfter(String after, int limit) {
+    checkLimit(limit);
+    Cursor cursor = decodeCursor(after);
+    return toPage(repository.findAfter(cursor, limit + 1), limit);
+  }
+
+  /**
+   * Like {@link #listAfter}, over the bookmarks matching {@code text} and {@code tags}; {@code
+   * text} and {@code tags} are cleaned as in {@link #search(String, Set, int, int)}.
+   *
+   * @throws NullPointerException if {@code text} or {@code tags} is {@code null}
+   * @throws IllegalArgumentException if {@code limit} is out of range or {@code after} is not a
+   *     valid cursor
+   */
+  public CursorPage searchAfter(String text, Set<String> tags, String after, int limit) {
+    String cleanText = Objects.requireNonNull(text, "text").strip();
+    Set<String> cleanTags = cleanTags(Objects.requireNonNull(tags, "tags"));
+    checkLimit(limit);
+    Cursor cursor = decodeCursor(after);
+    return toPage(repository.searchAfter(cleanText, cleanTags, cursor, limit + 1), limit);
+  }
+
+  private static Cursor decodeCursor(String after) {
+    return after == null ? null : Cursor.decode(after);
+  }
+
+  /** Makes a page of the first {@code limit} of {@code found}, which holds up to one more. */
+  private static CursorPage toPage(List<Bookmark> found, int limit) {
+    if (found.size() <= limit) {
+      return new CursorPage(List.copyOf(found), null);
+    }
+    List<Bookmark> items = List.copyOf(found.subList(0, limit));
+    return new CursorPage(items, Cursor.of(items.get(limit - 1)).encode());
+  }
+
+  private static void checkLimit(int limit) {
+    if (limit < 1 || limit > MAX_PAGE_SIZE) {
+      throw new IllegalArgumentException(
+          "limit must be from 1 to " + MAX_PAGE_SIZE + ": " + limit);
+    }
   }
 
   private static Set<String> cleanTags(Set<String> tags) {

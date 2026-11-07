@@ -56,6 +56,21 @@ public interface BookmarkRepository {
   long countSearch(String text, Set<String> tags);
 
   /**
+   * Returns at most {@code limit} bookmarks in the newest-first order ({@code createdAt}
+   * descending, then {@code id} descending) that come strictly after {@code after} in that order:
+   * {@code createdAt} earlier than {@code after.createdAt()}, or equal with an {@code id} lower than
+   * {@code after.id()}. From the newest bookmark when {@code after} is {@code null}. The cursor's
+   * bookmark need not exist any more.
+   */
+  List<Bookmark> findAfter(Cursor after, int limit);
+
+  /**
+   * Like {@link #findAfter}, over only the bookmarks {@link #search} matches for {@code text} and
+   * {@code tags}.
+   */
+  List<Bookmark> searchAfter(String text, Set<String> tags, Cursor after, int limit);
+
+  /**
    * Returns the bookmark whose {@code url} equals {@code url} exactly (case-sensitive), if there is
    * one. This default looks through {@link #findAll(int, int)} pages of 100, from page 0, until it
    * finds a match or gets a page with fewer than 100 bookmarks; when several match it returns the

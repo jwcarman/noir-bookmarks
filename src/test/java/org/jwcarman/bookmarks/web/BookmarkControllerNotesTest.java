@@ -13,8 +13,8 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import java.time.Instant;
 import java.util.List;
 import org.jwcarman.bookmarks.domain.Bookmark;
-import org.jwcarman.bookmarks.service.BookmarkPage;
 import org.jwcarman.bookmarks.service.BookmarkService;
+import org.jwcarman.bookmarks.service.CursorPage;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
@@ -123,7 +123,7 @@ class BookmarkControllerNotesTest {
   @Test
   void getAndListReturnNotes() throws Exception {
     given(service.get(7)).willReturn(saved("n"));
-    given(service.list(0, 20)).willReturn(new BookmarkPage(List.of(saved("n")), 0, 20, 1));
+    given(service.listAfter(null, 20)).willReturn(new CursorPage(List.of(saved("n")), null));
     mvc.perform(get("/bookmarks/7"))
         .andExpect(status().isOk())
         .andExpect(jsonPath("$.notes").value("n"));

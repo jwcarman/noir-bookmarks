@@ -71,6 +71,16 @@ class BookmarkRepositoryFindByUrlTest {
       throw new UnsupportedOperationException();
     }
 
+    @Override
+    public List<Bookmark> findAfter(Cursor after, int limit) {
+      throw new UnsupportedOperationException();
+    }
+
+    @Override
+    public List<Bookmark> searchAfter(String text, Set<String> tags, Cursor after, int limit) {
+      throw new UnsupportedOperationException();
+    }
+
     List<Integer> pages() {
       return calls.stream().map(c -> c[0]).toList();
     }

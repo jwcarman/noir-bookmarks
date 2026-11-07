@@ -8,6 +8,7 @@ import java.util.Set;
 import java.util.TreeMap;
 import org.jwcarman.bookmarks.domain.Bookmark;
 import org.jwcarman.bookmarks.domain.BookmarkRepository;
+import org.jwcarman.bookmarks.domain.Cursor;
 
 /** A {@link BookmarkRepository} in a map, for service tests. Ids start at 1. */
 class InMemoryBookmarkRepository implements BookmarkRepository {
@@ -77,6 +78,29 @@ class InMemoryBookmarkRepository implements BookmarkRepository {
   @Override
   public long countSearch(String text, Set<String> tags) {
     return bookmarks.values().stream().filter(b -> matches(b, text, tags)).count();
+  }
+
+  @Override
+  public List<Bookmark> findAfter(Cursor after, int limit) {
+    return searchAfter("", Set.of(), after, limit);
+  }
+
+  @Override
+  public List<Bookmark> searchAfter(String text, Set<String> tags, Cursor after, int limit) {
+    return bookmarks.values().stream()
+        .filter(b -> matches(b, text, tags))
+        .filter(b -> isAfter(b, after))
+        .sorted(NEWEST_FIRST)
+        .limit(limit)
+        .toList();
+  }
+
+  private static boolean isAfter(Bookmark b, Cursor after) {
+    if (after == null) {
+      return true;
+    }
+    int byTime = b.createdAt().compareTo(after.createdAt());
+    return byTime < 0 || (byTime == 0 && b.id() < after.id());
   }
 
   private static boolean matches(Bookmark b, String text, Set<String> tags) {

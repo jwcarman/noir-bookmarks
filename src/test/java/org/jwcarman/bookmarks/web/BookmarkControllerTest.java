@@ -16,8 +16,8 @@ import java.time.Instant;
 import java.util.List;
 import org.jwcarman.bookmarks.domain.Bookmark;
 import org.jwcarman.bookmarks.service.BookmarkNotFoundException;
-import org.jwcarman.bookmarks.service.BookmarkPage;
 import org.jwcarman.bookmarks.service.BookmarkService;
+import org.jwcarman.bookmarks.service.CursorPage;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
@@ -102,22 +102,22 @@ class BookmarkControllerTest {
 
   @Test
   void listUsesDefaults() throws Exception {
-    given(service.list(0, 20)).willReturn(new BookmarkPage(List.of(SAVED), 0, 20, 1));
+    given(service.listAfter(null, 20)).willReturn(new CursorPage(List.of(SAVED), null));
     mvc.perform(get("/bookmarks"))
         .andExpect(status().isOk())
         .andExpect(jsonPath("$.items[0].id").value(7))
-        .andExpect(jsonPath("$.total").value(1))
-        .andExpect(jsonPath("$.size").value(20));
+        .andExpect(jsonPath("$.next").doesNotExist());
   }
 
   @Test
   void badPagingIsAProblem() throws Exception {
-    given(service.list(0, 500)).willThrow(new IllegalArgumentException("size must be from 1 to 100: 500"));
-    mvc.perform(get("/bookmarks").param("size", "500"))
+    given(service.listAfter(null, 500))
+        .willThrow(new IllegalArgumentException("limit must be from 1 to 100: 500"));
+    mvc.perform(get("/bookmarks").param("limit", "500"))
         .andExpect(status().isBadRequest())
         .andExpect(content().contentTypeCompatibleWith(MediaType.APPLICATION_PROBLEM_JSON))
         .andExpect(jsonPath("$.title").value("Bad request"))
-        .andExpect(jsonPath("$.detail").value("size must be from 1 to 100: 500"));
+        .andExpect(jsonPath("$.detail").value("limit must be from 1 to 100: 500"));
   }
 
   @Test
