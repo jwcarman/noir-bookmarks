@@ -24,10 +24,12 @@ public class BookmarkService {
 
   private final BookmarkRepository repository;
   private final Clock clock;
+  private final TagService tags;
 
   public BookmarkService(BookmarkRepository repository, Clock clock) {
     this.repository = Objects.requireNonNull(repository, "repository");
     this.clock = Objects.requireNonNull(clock, "clock");
+    this.tags = new TagService(this.repository);
   }
 
   /** Same as {@link #create(String, String, List, String)} with empty notes. */
@@ -142,65 +144,19 @@ public class BookmarkService {
     }
   }
 
-  /**
-   * Returns the bookmarks tagged {@code tag}, newest first. The tag is cleaned the way bookmarks
-   * clean their tags (stripped and lowercased with {@code Locale.ROOT}) before the lookup.
-   *
-   * @throws NullPointerException if {@code tag} is {@code null}
-   * @throws IllegalArgumentException if {@code tag} is blank
-   */
+  /** Delegates to {@link TagService#listByTag}, on a {@code TagService} over this repository. */
   public List<Bookmark> listByTag(String tag) {
-    String clean = Objects.requireNonNull(tag, "tag").strip().toLowerCase(Locale.ROOT);
-    if (clean.isEmpty()) {
-      throw new IllegalArgumentException("tag must not be blank");
-    }
-    return repository.findByTag(clean);
+    return tags.listByTag(tag);
   }
 
-  /**
-   * Replaces tag {@code from} with tag {@code to} on every bookmark tagged {@code from}, and returns
-   * how many bookmarks changed. Both tags are cleaned first the way bookmarks clean their tags
-   * (stripped, lowercased with {@code Locale.ROOT}). On each changed bookmark, {@code to} takes the
-   * position {@code from} had; if the bookmark already had {@code to}, the first occurrence keeps
-   * its position and the duplicate is dropped. The id, URL, title, creation time and notes never
-   * change.
-   * When the cleaned tags are equal nothing is saved and the result is 0.
-   *
-   * @throws NullPointerException if {@code from} or {@code to} is {@code null}
-   * @throws IllegalArgumentException if {@code from} or {@code to} is blank
-   */
+  /** Delegates to {@link TagService#renameTag}, on a {@code TagService} over this repository. */
   public int renameTag(String from, String to) {
-    String cleanFrom = cleanTag(from, "from");
-    String cleanTo = cleanTag(to, "to");
-    if (cleanFrom.equals(cleanTo)) {
-      return 0;
-    }
-    List<Bookmark> tagged = repository.findByTag(cleanFrom);
-    for (Bookmark bookmark : tagged) {
-      List<String> tags =
-          bookmark.tags().stream().map(tag -> tag.equals(cleanFrom) ? cleanTo : tag).toList();
-      save(bookmark, bookmark.title(), tags, bookmark.notes());
-    }
-    return tagged.size();
+    return tags.renameTag(from, to);
   }
 
-  /**
-   * Deletes every bookmark tagged {@code tag} and returns how many were deleted. The tag is cleaned
-   * the way bookmarks clean their tags (stripped, lowercased with {@code Locale.ROOT}) first.
-   *
-   * @throws NullPointerException if {@code tag} is {@code null}
-   * @throws IllegalArgumentException if {@code tag} is blank
-   */
+  /** Delegates to {@link TagService#deleteTagged}, on a {@code TagService} over this repository. */
   public int deleteTagged(String tag) {
-    return repository.deleteByTag(cleanTag(tag, "tag"));
-  }
-
-  private static String cleanTag(String tag, String name) {
-    String clean = Objects.requireNonNull(tag, name).strip().toLowerCase(Locale.ROOT);
-    if (clean.isEmpty()) {
-      throw new IllegalArgumentException(name + " must not be blank");
-    }
-    return clean;
+    return tags.deleteTagged(tag);
   }
 
   /**
