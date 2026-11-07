@@ -9,7 +9,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
-import org.jwcarman.bookmarks.service.BookmarkService;
+import org.jwcarman.bookmarks.service.TagService;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
@@ -22,7 +22,7 @@ import org.springframework.test.web.servlet.ResultActions;
 class TagControllerTest {
 
   @Autowired MockMvc mvc;
-  @MockitoBean BookmarkService service;
+  @MockitoBean TagService service;
 
   ResultActions postJson(String tag, String body) throws Exception {
     return mvc.perform(
